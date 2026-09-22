@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MNSR — App da Visita</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#E5E1D3; --surface:#FBFAF6; --surface-2:#EFEBDC;
+    --ink:#23241E; --ink-soft:#5B5D51;
+    --gold:#93701F; --gold-strong:#A8842E;
+    --verdigris:#4F6459; --oxblood:#7A3327;
+    --line:rgba(35,36,30,0.14); --shadow:rgba(35,36,30,0.16);
+    --good:#4F6459; --warn:#A8842E; --bad:#7A3327;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#1B1C17; --surface:#232419; --surface-2:#2B2C20;
+      --ink:#ECE7D8; --ink-soft:#B4AF9B;
+      --gold:#C9A227; --gold-strong:#D8B247;
+      --verdigris:#8CA093; --oxblood:#C0604A;
+      --line:rgba(236,231,216,0.14); --shadow:rgba(0,0,0,0.45);
+      --good:#8CA093; --warn:#D8B247; --bad:#C0604A;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#1B1C17; --surface:#232419; --surface-2:#2B2C20;
+    --ink:#ECE7D8; --ink-soft:#B4AF9B;
+    --gold:#C9A227; --gold-strong:#D8B247;
+    --verdigris:#8CA093; --oxblood:#C0604A;
+    --line:rgba(236,231,216,0.14); --shadow:rgba(0,0,0,0.45);
+    --good:#8CA093; --warn:#D8B247; --bad:#C0604A;
+  }
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  *{margin:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    background:var(--bg); color:var(--ink); font-family:'Work Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    display:flex; justify-content:center; align-items:flex-start; min-height:100%;
+    padding:28px 14px;
+  }
+  h1,h2,h3,.serif{font-family:'Fraunces', serif;}
+
+  .shell{
+    width:100%; max-width:412px; height:min(880px, 100vh - 40px);
+    background:var(--surface); border-radius:34px;
+    box-shadow:0 30px 60px -20px var(--shadow), 0 0 0 1px var(--line);
+    overflow:hidden; position:relative; display:flex; flex-direction:column;
+    border:8px solid var(--ink);
+  }
+  @media (max-width: 600px){
+    body{padding:0;}
+    .shell{max-width:100%; height:100vh; height:100dvh; border-radius:0; border:none; box-shadow:none;}
+  }
+  .notch{
+    position:absolute;top:0;left:50%;transform:translateX(-50%);
+    width:120px;height:20px;background:var(--ink);border-radius:0 0 14px 14px;z-index:30;
+  }
+  @media (max-width:600px){ .notch{display:none;} }
+
+  .topbar{
+    flex:0 0 auto; padding:calc(16px + env(safe-area-inset-top,0px)) 16px 12px;
+    display:flex;align-items:center;gap:10px; background:var(--surface);
+    border-bottom:1px solid var(--line); position:relative; z-index:10;
+  }
+  .topbar .back{
+    width:34px;height:34px;border-radius:50%;border:1px solid var(--line);
+    background:var(--surface-2);display:flex;align-items:center;justify-content:center;
+    cursor:pointer;flex:0 0 auto;color:var(--ink); transition:transform .15s ease;
+  }
+  .topbar .back:active{transform:scale(0.9);}
+  .topbar .back.hidden{visibility:hidden;}
+  .topbar .titles{flex:1;min-width:0;}
+  .topbar .titles h1{font-size:1.02rem;font-weight:600;line-height:1.15;letter-spacing:.2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .topbar .titles p{font-size:.7rem;color:var(--ink-soft);margin-top:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .brandmark{
+    width:32px;height:32px;border-radius:9px;flex:0 0 auto;
+    background:linear-gradient(145deg,var(--verdigris),var(--ink));
+    display:flex;align-items:center;justify-content:center;
+    color:var(--gold-strong);font-family:'Fraunces',serif;font-weight:600;font-size:.68rem;
+  }
+  .pointspill{
+    flex:0 0 auto; display:flex; align-items:center; gap:5px;
+    background:var(--surface-2); border:1px solid var(--line); border-radius:999px;
+    padding:6px 10px; font-size:.72rem; font-weight:700; color:var(--gold-strong);
+    white-space:nowrap;
+  }
+  .pointspill svg{width:13px;height:13px;stroke:var(--gold-strong);}
+
+  .screens{flex:1;position:relative;overflow:hidden;}
+  .screen{
+    position:absolute;inset:0;overflow-y:auto;
+    padding:18px 18px calc(100px + env(safe-area-inset-bottom,0px));
+    opacity:0;visibility:hidden;transform:translateX(16px);
+    transition:opacity .22s ease, transform .22s ease;
+  }
+  .screen.active{opacity:1;visibility:visible;transform:translateX(0);}
+
+  .eyebrow{font-size:.78rem;color:var(--verdigris);font-weight:600;margin-bottom:4px;}
+  .lead{font-size:1.42rem;line-height:1.25;font-weight:600;margin-bottom:6px;}
+  .sub{font-size:.85rem;color:var(--ink-soft);margin-bottom:18px;max-width:32ch;}
+
+  /* ---- Início dashboard ---- */
+  .notif-banner{
+    background:linear-gradient(135deg,var(--ink),#2c2e24);
+    border-radius:18px; padding:15px 16px; margin-bottom:16px;
+    display:flex; gap:12px; align-items:flex-start; color:var(--bg);
+  }
+  .notif-banner svg{width:20px;height:20px;stroke:var(--gold-strong);flex:0 0 auto;margin-top:1px;}
+  .notif-banner p{font-size:.83rem;line-height:1.45;color:#EFECDD;}
+  .notif-banner .tag{font-size:.68rem;color:var(--gold-strong);font-weight:700;margin-bottom:3px;display:block;}
+
+  .section-title{font-size:.92rem;font-weight:600;margin:20px 0 10px;display:flex;align-items:center;justify-content:space-between;}
+  .section-title span.small{font-size:.7rem;color:var(--ink-soft);font-weight:500;}
+
+  .room-row{
+    display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);
+  }
+  .room-row:last-child{border-bottom:none;}
+  .room-row .rname{flex:1;font-size:.82rem;font-weight:500;}
+  .room-row .rpiso{font-size:.68rem;color:var(--ink-soft);}
+  .room-bar{width:70px;height:6px;border-radius:4px;background:var(--surface-2);overflow:hidden;flex:0 0 auto;}
+  .room-bar i{display:block;height:100%;border-radius:4px;transition:width .5s ease, background .5s ease;}
+  .room-pct{width:34px;text-align:right;font-size:.72rem;color:var(--ink-soft);flex:0 0 auto;}
+
+  .quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;}
+  .quick-card{
+    background:var(--surface-2);border:1px solid var(--line);border-radius:16px;
+    padding:14px;cursor:pointer;transition:border-color .15s ease, transform .15s ease;
+  }
+  .quick-card:active{transform:scale(0.97);}
+  .quick-card:hover{border-color:var(--gold);}
+  .quick-card svg{width:20px;height:20px;stroke:var(--gold-strong);margin-bottom:8px;}
+  .quick-card h4{font-size:.82rem;font-weight:600;margin-bottom:2px;}
+  .quick-card p{font-size:.68rem;color:var(--ink-soft);line-height:1.35;}
+
+  .visit-btn{
+    margin-top:10px;padding:9px 14px;border-radius:999px;border:1px solid var(--gold);
+    background:transparent;color:var(--gold-strong);font-weight:700;font-size:.74rem;cursor:pointer;
+  }
+  .visit-btn[disabled]{opacity:.5;cursor:default;}
+
+  /* ---- Roteiro generator ---- */
+  .chiprow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .selchip{
+    border:1px solid var(--line);background:var(--surface-2);color:var(--ink);
+    font-size:.8rem;font-weight:600;padding:9px 14px;border-radius:999px;cursor:pointer;
+    font-family:'Work Sans',sans-serif;transition:all .15s ease;
+  }
+  .selchip.picked{background:var(--ink);color:var(--bg);border-color:var(--ink);}
+  .field-label{font-size:.75rem;color:var(--ink-soft);font-weight:600;margin-bottom:8px;}
+  .generate-btn{
+    width:100%;padding:14px;border-radius:14px;border:none;background:var(--gold);
+    color:var(--surface);font-weight:700;font-size:.9rem;cursor:pointer;margin-top:4px;
+    font-family:'Work Sans',sans-serif;transition:transform .15s ease;
+  }
+  .generate-btn:active{transform:scale(0.98);}
+
+  .roteiro-card{
+    background:var(--surface-2);border:1px solid var(--line);border-radius:18px;padding:16px;
+    margin-bottom:12px;display:flex;gap:14px;align-items:flex-start;cursor:pointer;
+    transition:border-color .15s ease, transform .15s ease;
+  }
+  .roteiro-card:active{transform:scale(0.98);}
+  .roteiro-card:hover{border-color:var(--gold);}
+  .roteiro-icon{width:48px;height:48px;border-radius:13px;flex:0 0 auto;background:var(--ink);
+    display:flex;align-items:center;justify-content:center;}
+  .roteiro-icon svg{width:24px;height:24px;stroke:var(--gold-strong);}
+  .roteiro-body h3{font-size:1.0rem;font-weight:600;margin-bottom:3px;}
+  .roteiro-body .meta{font-size:.7rem;color:var(--ink-soft);}
+  .roteiro-body .meta span::before{content:"·";margin-right:7px;color:var(--line);}
+  .roteiro-body .meta span:first-child::before{content:"";margin-right:0;}
+
+  .timeline{position:relative;padding-left:28px;margin-top:6px;}
+  .timeline::before{content:"";position:absolute;left:11px;top:6px;bottom:6px;width:2px;background:var(--line);}
+  .stop{position:relative;padding-bottom:22px;cursor:pointer;}
+  .stop:last-child{padding-bottom:0;}
+  .stop-num{
+    position:absolute;left:-28px;top:0;width:24px;height:24px;border-radius:50%;
+    background:var(--surface);border:2px solid var(--gold);
+    display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;color:var(--gold);
+  }
+  .stop-card{
+    background:var(--surface-2);border:1px solid var(--line);border-radius:16px;
+    padding:14px 14px 14px 16px;display:flex;gap:12px;align-items:center;
+    transition:border-color .15s ease, transform .15s ease;
+  }
+  .stop:active .stop-card{transform:scale(0.98);}
+  .stop-card:hover{border-color:var(--gold);}
+  .stop-thumb{width:44px;height:44px;border-radius:11px;flex:0 0 auto;background:var(--ink);
+    display:flex;align-items:center;justify-content:center;}
+  .stop-thumb svg{width:22px;height:22px;stroke:var(--gold-strong);}
+  .stop-text h4{font-size:.9rem;font-weight:600;line-height:1.25;}
+  .stop-text p{font-size:.7rem;color:var(--ink-soft);margin-top:2px;}
+  .stop-chevron{margin-left:auto;color:var(--ink-soft);flex:0 0 auto;}
+
+  /* ---- obra detail ---- */
+  .obra-hero{
+    width:100%;height:170px;border-radius:20px;
+    background:radial-gradient(circle at 30% 20%, rgba(255,255,255,.06), transparent 60%),
+      linear-gradient(155deg,var(--ink),#2f3126);
+    display:flex;align-items:center;justify-content:center;margin-bottom:18px;border:1px solid var(--line);
+  }
+  .obra-hero svg{width:80px;height:80px;stroke:var(--gold-strong);}
+  .obra-tag{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;color:var(--verdigris);font-weight:600;margin-bottom:8px;}
+  .obra-title{font-size:1.35rem;font-weight:600;line-height:1.25;margin-bottom:6px;}
+  .obra-meta{font-size:.8rem;color:var(--ink-soft);margin-bottom:16px;}
+  .obra-meta div{margin-bottom:3px;}
+  .obra-meta b{color:var(--ink);font-weight:600;}
+  .obra-desc{font-size:.9rem;line-height:1.6;color:var(--ink);margin-bottom:20px;}
+  .ask-btn{
+    width:100%;padding:13px 16px;border-radius:14px;border:1px solid var(--gold);
+    background:transparent;color:var(--gold-strong);font-weight:600;font-size:.86rem;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s ease;
+    font-family:'Work Sans',sans-serif;
+  }
+  .ask-btn:hover{background:var(--surface-2);}
+  .ask-btn svg{width:16px;height:16px;stroke:var(--gold-strong);}
+
+  /* ---- Caça ao Tesouro ---- */
+  .progress-wrap{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .progress-track{flex:1;height:8px;border-radius:5px;background:var(--surface-2);overflow:hidden;}
+  .progress-fill{height:100%;background:var(--gold);border-radius:5px;transition:width .4s ease;width:0%;}
+  .progress-text{font-size:.72rem;color:var(--ink-soft);white-space:nowrap;}
+  .medals-row{display:flex;gap:10px;margin-bottom:20px;}
+  .medal-badge{
+    flex:1;text-align:center;padding:12px 6px;border-radius:14px;background:var(--surface-2);
+    border:1px solid var(--line);opacity:.4;transition:opacity .3s ease, transform .3s ease;
+  }
+  .medal-badge.unlocked{opacity:1;border-color:var(--gold);}
+  .medal-badge svg{width:22px;height:22px;stroke:var(--gold-strong);margin-bottom:4px;}
+  .medal-badge span{display:block;font-size:.62rem;font-weight:700;color:var(--ink-soft);}
+  .medal-badge.unlocked span{color:var(--gold-strong);}
+
+  .pista-card{
+    background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;
+  }
+  .pista-card.done{border-color:var(--good);}
+  .pista-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .pista-icon{width:38px;height:38px;border-radius:10px;background:var(--ink);flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;}
+  .pista-icon svg{width:19px;height:19px;stroke:var(--gold-strong);}
+  .pista-head h4{font-size:.86rem;font-weight:600;}
+  .pista-head p{font-size:.68rem;color:var(--ink-soft);}
+  .pista-clue{font-size:.8rem;color:var(--ink);line-height:1.5;margin-bottom:10px;font-style:italic;}
+  .scan-btn{
+    width:100%;padding:10px;border-radius:11px;border:1px dashed var(--gold);background:transparent;
+    color:var(--gold-strong);font-weight:600;font-size:.78rem;cursor:pointer;display:flex;
+    align-items:center;justify-content:center;gap:7px;font-family:'Work Sans',sans-serif;
+  }
+  .scan-btn svg{width:15px;height:15px;stroke:var(--gold-strong);}
+  .scan-btn.scanning{animation:pulse 0.9s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.45;}}
+  .quiz-q{font-size:.82rem;font-weight:600;margin-bottom:10px;}
+  .quiz-opt{
+    display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;
+    border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:.78rem;
+    margin-bottom:7px;cursor:pointer;font-family:'Work Sans',sans-serif;transition:all .15s ease;
+  }
+  .quiz-opt:hover{border-color:var(--gold);}
+  .quiz-opt.correct{background:var(--good);color:var(--surface);border-color:var(--good);}
+  .quiz-opt.wrong{background:var(--bad);color:var(--surface);border-color:var(--bad);}
+  .quiz-fb{font-size:.76rem;color:var(--ink-soft);margin-top:8px;line-height:1.5;}
+  .done-tag{font-size:.7rem;color:var(--good);font-weight:700;display:flex;align-items:center;gap:5px;}
+  .done-tag svg{width:14px;height:14px;stroke:var(--good);}
+  .reward-card{
+    background:linear-gradient(135deg,var(--ink),#2c2e24);color:var(--bg);border-radius:16px;
+    padding:16px;text-align:center;margin-top:6px;
+  }
+  .reward-card svg{width:26px;height:26px;stroke:var(--gold-strong);margin-bottom:6px;}
+  .reward-card h4{font-size:.95rem;margin-bottom:4px;color:var(--gold-strong);}
+  .reward-card p{font-size:.78rem;color:#EFECDD;line-height:1.4;}
+  .reward-code{
+    display:inline-block;margin-top:8px;padding:6px 14px;background:var(--surface);color:var(--ink);
+    border-radius:8px;font-weight:700;font-size:.8rem;letter-spacing:.5px;
+  }
+
+  /* ---- Assistente ---- */
+  .chat-wrap{display:flex;flex-direction:column;height:100%;padding:0;}
+  .profile-toggle{
+    flex:0 0 auto;display:flex;gap:8px;padding:12px 16px 6px;
+  }
+  .profile-btn{
+    flex:1;padding:9px;border-radius:11px;border:1px solid var(--line);background:var(--surface-2);
+    color:var(--ink-soft);font-weight:600;font-size:.76rem;cursor:pointer;font-family:'Work Sans',sans-serif;
+    transition:all .15s ease;
+  }
+  .profile-btn.active{background:var(--ink);color:var(--bg);border-color:var(--ink);}
+  .chat-scroll{flex:1;overflow-y:auto;padding:10px 16px;display:flex;flex-direction:column;gap:10px;}
+  .bubble{max-width:82%;padding:11px 14px;border-radius:16px;font-size:.87rem;line-height:1.5;animation:rise .25s ease;}
+  @keyframes rise{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .bubble.bot{background:var(--surface-2);color:var(--ink);align-self:flex-start;border:1px solid var(--line);border-bottom-left-radius:4px;}
+  .bubble.user{background:var(--ink);color:var(--bg);align-self:flex-end;border-bottom-right-radius:4px;}
+  .bubble.system{align-self:center;background:none;color:var(--ink-soft);font-size:.72rem;font-weight:600;padding:4px;}
+  .typing{display:flex;gap:4px;align-self:flex-start;padding:12px 14px;background:var(--surface-2);
+    border:1px solid var(--line);border-radius:16px;border-bottom-left-radius:4px;}
+  .typing span{width:6px;height:6px;border-radius:50%;background:var(--ink-soft);animation:blink 1.1s infinite ease-in-out;}
+  .typing span:nth-child(2){animation-delay:.15s;}
+  .typing span:nth-child(3){animation-delay:.3s;}
+  @keyframes blink{0%,80%,100%{opacity:.25;}40%{opacity:1;}}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;padding:4px 16px 12px;flex:0 0 auto;}
+  .chip{border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:.74rem;
+    padding:8px 12px;border-radius:999px;cursor:pointer;font-family:'Work Sans',sans-serif;transition:border-color .15s ease;}
+  .chip:hover{border-color:var(--gold);}
+  .chat-input-row{flex:0 0 auto;display:flex;gap:8px;padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px));
+    border-top:1px solid var(--line);background:var(--surface);}
+  .chat-input-row input{flex:1;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);
+    border-radius:999px;padding:11px 16px;font-size:.87rem;font-family:'Work Sans',sans-serif;outline:none;}
+  .chat-input-row input:focus{border-color:var(--gold);}
+  .chat-input-row button{width:42px;height:42px;border-radius:50%;border:none;background:var(--gold);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;transition:transform .15s ease;}
+  .chat-input-row button:active{transform:scale(0.9);}
+  .chat-input-row button svg{width:18px;height:18px;stroke:var(--surface);}
+
+  .bottomnav{flex:0 0 auto;display:flex;border-top:1px solid var(--line);background:var(--surface);
+    padding:7px 6px calc(9px + env(safe-area-inset-bottom,0px));position:relative;z-index:10;}
+  .navbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 0;
+    background:none;border:none;cursor:pointer;color:var(--ink-soft);font-size:.62rem;font-weight:600;
+    transition:color .15s ease;font-family:'Work Sans',sans-serif;}
+  .navbtn svg{width:19px;height:19px;stroke:currentColor;}
+  .navbtn.active{color:var(--gold-strong);}
+
+  .screen::-webkit-scrollbar, .chat-scroll::-webkit-scrollbar{width:0;}
+</style>
+</head>
+<body>
+
+<div class="shell" id="shell">
+  <div class="notch"></div>
+
+  <div class="topbar">
+    <button class="back hidden" id="backBtn" aria-label="Voltar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="brandmark" id="brandmark">MSR</div>
+    <div class="titles">
+      <h1 id="topTitle">Início</h1>
+      <p id="topSubtitle">Museu Nacional Soares dos Reis</p>
+    </div>
+    <div class="pointspill" id="pointsPill">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="15" r="5"/><path d="M9 10L7 3M15 10l2-7"/></svg>
+      <span id="pointsVal">0</span>
+    </div>
+  </div>
+
+  <div class="screens">
+
+    <!-- INÍCIO -->
+    <section class="screen" id="screen-inicio">
+      <div class="eyebrow">Boas-vindas</div>
+      <h2 class="lead">A sua visita, em tempo real</h2>
+      <p class="sub">Sugestões e afluência das salas, atualizadas ao vivo.</p>
+
+      <div class="notif-banner" id="notifBanner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 4 2 5 2 6H4c0-1 2-2 2-6z"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
+        <p><span class="tag" id="notifTag">Aviso</span><span id="notifText">A carregar…</span></p>
+      </div>
+
+      <button class="visit-btn" id="visitBonusBtn">Marcar visita a esta sala (+15 pts)</button>
+
+      <div class="section-title">Afluência das salas <span class="small">agora</span></div>
+      <div id="roomsList"></div>
+
+      <div class="section-title">Explorar</div>
+      <div class="quick-actions">
+        <div class="quick-card" data-goto="roteiros">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6z"/><path d="M9 3v15M15 6v15"/></svg>
+          <h4>Gerar roteiro</h4>
+          <p>Escolha o tempo e o tema da visita.</p>
+        </div>
+        <div class="quick-card" data-goto="tesouro">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="15" r="5"/><path d="M9 10L7 3M15 10l2-7"/></svg>
+          <h4>Caça ao Tesouro</h4>
+          <p>Resolva pistas e ganhe medalhas.</p>
+        </div>
+        <div class="quick-card" data-goto="assistente" style="grid-column:1/-1;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          <h4>Falar com o assistente</h4>
+          <p>Pergunte sobre qualquer obra — adaptado à idade de quem visita.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROTEIROS: gerador -->
+    <section class="screen" id="screen-roteiros">
+      <div class="eyebrow">Roteiros inteligentes</div>
+      <h2 class="lead">Quanto tempo tem hoje?</h2>
+      <p class="sub">Escolha a duração e o tema — nós montamos o percurso.</p>
+
+      <div class="field-label">Duração</div>
+      <div class="chiprow" id="durationChips">
+        <button class="selchip" data-dur="30">30 min</button>
+        <button class="selchip" data-dur="60">60 min</button>
+        <button class="selchip" data-dur="90">90 min</button>
+      </div>
+
+      <div class="field-label">Tema</div>
+      <div class="chiprow" id="themeChips">
+        <button class="selchip" data-tema="escultura">Obras-primas da Escultura</button>
+        <button class="selchip" data-tema="palacio">Mistérios do Palácio</button>
+        <button class="selchip" data-tema="oriente">Tesouros do Oriente</button>
+        <button class="selchip" data-tema="surpresa">Surpreenda-me</button>
+      </div>
+
+      <button class="generate-btn" id="generateBtn">Gerar roteiro</button>
+    </section>
+
+    <!-- ROTEIRO: resultado / detalhe -->
+    <section class="screen" id="screen-roteiro-detalhe">
+      <div class="eyebrow" id="rdEyebrow">Roteiro</div>
+      <h2 class="lead" id="rdTitle">—</h2>
+      <p class="sub" id="rdSub">—</p>
+      <div class="timeline" id="rdTimeline"></div>
+    </section>
+
+    <!-- OBRA: detalhe -->
+    <section class="screen" id="screen-obra">
+      <div class="obra-hero" id="obraHero"></div>
+      <div class="obra-tag" id="obraTagRoom">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+        <span id="obraRoomText">—</span>
+      </div>
+      <h2 class="obra-title" id="obraTitle">—</h2>
+      <div class="obra-meta">
+        <div><b>Autor</b> · <span id="obraAutor">—</span></div>
+        <div><b>Data</b> · <span id="obraAno">—</span></div>
+        <div><b>Técnica</b> · <span id="obraTecnica">—</span></div>
+      </div>
+      <p class="obra-desc" id="obraDesc">—</p>
+      <button class="ask-btn" id="askAboutBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        Perguntar ao assistente sobre esta obra
+      </button>
+    </section>
+
+    <!-- CAÇA AO TESOURO -->
+    <section class="screen" id="screen-tesouro">
+      <div class="eyebrow">Gamificação</div>
+      <h2 class="lead">Caça ao Tesouro</h2>
+      <p class="sub">Leia o código em cada sala, responda ao enigma e ganhe medalhas.</p>
+
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-text" id="progressText">0/4 pistas</div>
+      </div>
+
+      <div class="medals-row" id="medalsRow"></div>
+
+      <div id="pistasList"></div>
+      <div id="rewardArea"></div>
+    </section>
+
+    <!-- ASSISTENTE -->
+    <section class="screen" id="screen-assistente">
+      <div class="chat-wrap">
+        <div class="profile-toggle">
+          <button class="profile-btn active" id="profAdulto">🧑 Adulto</button>
+          <button class="profile-btn" id="profCrianca">🧒 Criança</button>
+        </div>
+        <div class="chat-scroll" id="chatScroll"></div>
+        <div class="chips" id="chatChips"></div>
+        <div class="chat-input-row">
+          <input type="text" id="chatInput" placeholder="Pergunte sobre uma obra, artista ou visita…" autocomplete="off">
+          <button id="chatSend" aria-label="Enviar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <nav class="bottomnav">
+    <button class="navbtn active" data-tab="inicio">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
+      Início
+    </button>
+    <button class="navbtn" data-tab="roteiros">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6z"/><path d="M9 3v15M15 6v15"/></svg>
+      Roteiros
+    </button>
+    <button class="navbtn" data-tab="tesouro">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="5"/><path d="M9 10L7 3M15 10l2-7"/></svg>
+      Tesouro
+    </button>
+    <button class="navbtn" data-tab="assistente">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      Assistente
+    </button>
+  </nav>
+</div>
+
+<script>
+(function(){
+
+/* ================= ICONS ================= */
+const ICONS = {
+  compass:'<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M15 9l-3 6-3-6 3-1.5 3 1.5z"/>',
+  bust:'<path d="M12 3a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/><path d="M6 21c0-4 2.7-7 6-7s6 3 6 7"/>',
+  bronze:'<path d="M12 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M7 15c0-3 2.2-5 5-5s5 2 5 5"/><path d="M5 21h14M8 21v-4h8v4"/>',
+  painting:'<rect x="4" y="4" width="16" height="13" rx="1"/><path d="M4 14l4-4 3 3 5-6 4 5"/><path d="M9 21h6"/>',
+  vase:'<path d="M9 3h6M10 3c0 3-2 4-2 7a4 4 0 0 0 8 0c0-3-2-4-2-7"/><path d="M8 21h8l-1-7H9l-1 7z"/>',
+  goblet:'<path d="M7 3h10l-1 6a4 4 0 0 1-8 0L7 3z"/><path d="M12 13v5M8 21h8"/>',
+  chair:'<path d="M6 3v11M18 3v18M6 14h12M6 21v-7"/>',
+  qrcode:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v3M14 20h3"/>',
+  medal:'<circle cx="12" cy="15" r="5"/><path d="M9 10L7 3M15 10l2-7"/>',
+  check:'<path d="M20 6L9 17l-5-5"/>',
+  gift:'<rect x="3" y="8" width="18" height="13" rx="1"/><path d="M3 8h18M12 8v13M12 8c-2 0-4-1-4-3.5S9.5 2 12 4c2.5-2 4-.5 4 .5S14 8 12 8z"/>'
+};
+function svg(name, size){
+  size = size || 24;
+  return '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+ICONS[name]+'</svg>';
+}
+function chevron(){
+  return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
+}
+
+/* ================= CONTENT ================= */
+const OBRAS = {
+  desterrado:{ title:"O Desterrado", autor:"António Soares dos Reis", ano:"1872",
+    tecnica:"Escultura em mármore de Carrara", sala:"Galeria da Escultura · Piso 1",
+    icon:"bust", kb:"desterrado", temas:["escultura","palacio"],
+    desc:"A obra-prima do museu: um jovem sentado e pensativo, esculpido em Roma em 1872 como prova final de bolseiro. Com 1,78 m, a figura é lida hoje como símbolo universal do exílio e do deslocamento." },
+  conde:{ title:"Estátua do Conde de Ferreira", autor:"António Soares dos Reis", ano:"1940 (fundição)",
+    tecnica:"Bronze", sala:"Piso 1", icon:"bronze", kb:"conde", temas:["escultura"],
+    desc:"Retrato do benfeitor Joaquim Ferreira dos Santos, Conde de Ferreira, figura ligada a instituições de beneficência do Porto no séc. XIX. A fundição em bronze é de 1940." },
+  musica:{ title:"Música", autor:"António Soares dos Reis", ano:"1877",
+    tecnica:"Bronze (a partir do gesso)", sala:"Piso 1", icon:"bronze", kb:"musica", temas:["escultura"],
+    desc:"Alegoria da música: uma figura feminina de vestes longas segura uma cítara. O bronze exposto reproduz o modelo original em gesso de 1877." },
+  vieira:{ title:"Fuga de Margarida de Anjou", autor:"Vieira Portuense", ano:"c. 1801",
+    tecnica:"Pintura a óleo", sala:"Piso 1", icon:"painting", kb:"vieira", temas:["pintura","palacio"],
+    desc:"Cena histórica pintada com a exaltação de sentimentos que já anuncia o Romantismo, na viragem para o séc. XIX." },
+  sequeira:{ title:"Pintura de tema histórico", autor:"Domingos Sequeira", ano:"início do séc. XIX",
+    tecnica:"Pintura a óleo", sala:"Piso 1", icon:"painting", kb:"sequeira", temas:["pintura"],
+    desc:"Domingos Sequeira destacou-se com obras inovadoras de temas históricos e sociais, também precursoras do Romantismo em Portugal." },
+  escolaporto:{ title:"Paisagens da Escola do Porto", autor:"Silva Porto, Marques de Oliveira, A. Loureiro, H. Pousão", ano:"final do séc. XIX",
+    tecnica:"Pintura a óleo", sala:"Piso 1", icon:"painting", kb:"escolaporto", temas:["pintura"],
+    desc:"A mais importante coleção de pintura naturalista portuguesa dos séc. XIX e XX — a chamada Escola do Porto." },
+  faianca:{ title:"Faiança do Norte de Portugal", autor:"Diversas manufaturas", ano:"séc. XVIII–XIX",
+    tecnica:"Cerâmica esmaltada", sala:"Artes Decorativas · Piso 2", icon:"vase", kb:"ceramica", temas:["decorativas"],
+    desc:"Um dos núcleos de cerâmica mais completos do país, com faiança produzida no Norte de Portugal." },
+  porcelana:{ title:"Porcelana Oriental", autor:"Manufaturas da China e do Japão", ano:"séc. XVII–XIX",
+    tecnica:"Porcelana", sala:"Piso 2", icon:"vase", kb:"porcelana", temas:["decorativas","oriente"],
+    desc:"Peças chinesas e japonesas chegadas a Portugal pelas rotas marítimas — o núcleo dos «Novos Temas com o Oriente»." },
+  ourivesaria:{ title:"Ourivesaria do Século XVIII", autor:"Ourives portugueses", ano:"séc. XVIII",
+    tecnica:"Prata e prata dourada", sala:"Artes Decorativas · Piso 2", icon:"goblet", kb:"ourivesaria", temas:["decorativas","palacio"],
+    desc:"Peças de prata e prata dourada, a par da joalharia arqueológica e de bens de igrejas do Norte do país." },
+  vidros:{ title:"Vidros Portugueses", autor:"Manufaturas portuguesas", ano:"séc. XVIII",
+    tecnica:"Vidro soprado", sala:"Piso 2", icon:"goblet", kb:"vidros", temas:["decorativas"],
+    desc:"Um núcleo pouco conhecido mas muito completo de vidro soprado português do séc. XVIII." },
+  mobiliario:{ title:"Mobiliário dos séc. XVI a XIX", autor:"Diversos", ano:"séc. XVI–XIX",
+    tecnica:"Madeiras nobres", sala:"Piso 2", icon:"chair", kb:"mobiliario", temas:["decorativas","palacio"],
+    desc:"Peças em madeiras nobres que atravessam quatro séculos do gosto doméstico português." }
+};
+const ALL_KEYS = Object.keys(OBRAS);
+
+/* ================= KNOWLEDGE BASE (assistente) — adulto / criança ================= */
+const KB = [
+  {id:"desterrado", keys:["desterrado"],
+    a:"«O Desterrado» é a obra-prima de Soares dos Reis: um jovem sentado e nu, em mármore de Carrara, esculpido em 1872 como prova final na Academia de Roma. Tem 1,78 m e representa o exílio — hoje é lido como símbolo universal de quem vive afastado da sua terra.",
+    kid:"«O Desterrado» é uma estátua de pedra branca (mármore) muito famosa! Mostra um rapaz sentado, com um ar triste, a pensar na sua terra que ficou longe. Um escultor chamado Soares dos Reis fez esta estátua há mais de 150 anos, e ela é tão especial que dá o nome ao museu todo! 🗿"},
+  {id:"conde", keys:["conde de ferreira","conde ferreira"],
+    a:"Esta estátua em bronze retrata Joaquim Ferreira dos Santos, Conde de Ferreira, um benfeitor do Porto no séc. XIX. Foi esculpida por Soares dos Reis; a fundição em bronze é de 1940.",
+    kid:"Esta estátua de metal escuro (bronze) é de um senhor chamado Conde de Ferreira, que ajudou muitas pessoas no Porto há muito tempo. 🎩"},
+  {id:"musica", keys:["musica","citara"],
+    a:"«Música» é uma alegoria de Soares dos Reis: uma figura feminina de vestes longas a tocar cítara. O bronze exposto reproduz o modelo em gesso de 1877.",
+    kid:"Esta estátua chama-se «Música» e mostra uma senhora a tocar um instrumento de cordas chamado cítara. É como se a música tivesse ganhado forma! 🎵"},
+  {id:"soares", keys:["soares dos reis","escultor","quem foi soares"],
+    a:"António Soares dos Reis (1847–1889) nasceu em Vila Nova de Gaia. Estudou escultura na Academia do Porto, ganhou bolsa para Paris em 1867 e depois para Roma. É o escultor mais importante do romantismo português — e dá o nome ao museu.",
+    kid:"Soares dos Reis foi um escultor português muito talentoso! Nasceu perto do Porto, aprendeu a esculpir quando ainda era jovem e até viajou para Paris e Roma para estudar. O museu tem o nome dele porque as suas estátuas são um tesouro! ✨"},
+  {id:"vieira", keys:["vieira portuense","margarida de anjou"],
+    a:"Vieira Portuense (1765–1805) foi um dos primeiros pintores a anunciar o Romantismo em Portugal. A sua pintura sobre a fuga de Margarida de Anjou já mostra a exaltação de sentimentos típica do movimento.",
+    kid:"Vieira Portuense foi um pintor português que gostava de pintar histórias emocionantes, como uma fuga cheia de aventura! 🎨"},
+  {id:"sequeira", keys:["domingos sequeira","sequeira"],
+    a:"Domingos Sequeira, ao lado de Vieira Portuense, destacou-se na viragem para o séc. XIX com pinturas de temas históricos que anunciam o Romantismo em Portugal.",
+    kid:"Domingos Sequeira foi outro pintor famoso que, tal como o Vieira Portuense, pintava momentos importantes da História. 🖌️"},
+  {id:"escolaporto", keys:["escola do porto","naturalismo","silva porto","marques de oliveira","pousao","henrique pousao","artur loureiro"],
+    a:"A chamada Escola do Porto reúne pintores naturalistas como Silva Porto, Marques de Oliveira, Artur Loureiro e Henrique Pousão. O museu guarda a mais importante coleção de pintura portuguesa dos séc. XIX e XX.",
+    kid:"A «Escola do Porto» não é uma escola normal — é o nome dado a um grupo de pintores portugueses que adoravam pintar paisagens muito realistas, como fotografias feitas à mão! 🌳"},
+  {id:"ceramica", keys:["ceramica","faianca"],
+    a:"O núcleo de cerâmica destaca a faiança do Norte de Portugal, com peças esmaltadas dos séc. XVIII e XIX — uma das coleções mais completas do género no país.",
+    kid:"Aqui há muitos pratos, jarras e potes de barro pintados e brilhantes, feitos no Norte de Portugal há mais de 200 anos! 🏺"},
+  {id:"porcelana", keys:["porcelana","oriente","namban","china","japao"],
+    a:"O museu tem um núcleo dedicado aos «Novos Temas com o Oriente»: porcelanas chinesas e japonesas chegadas a Portugal pelas rotas marítimas entre os séc. XVII e XIX.",
+    kid:"Estas peças de porcelana branca e azul vieram de barco desde a China e o Japão, há centenas de anos, numa viagem muito longa! ⛵"},
+  {id:"ourivesaria", keys:["ourivesaria","joalharia","prata","ouro"],
+    a:"A coleção de ourivesaria do séc. XVIII reúne peças em prata e prata dourada de ourives portugueses, junto a joalharia arqueológica e bens de igrejas do Norte do país.",
+    kid:"Estas peças brilhantes são feitas de prata, algumas até com um banho dourado! Foram feitas por artesãos chamados ourives, há mais de 250 anos. ✨"},
+  {id:"vidros", keys:["vidro","vidros"],
+    a:"Os vidros portugueses do séc. XVIII, em vidro soprado, formam uma coleção pouco conhecida mas muito completa do museu.",
+    kid:"Estes copos e jarras de vidro foram feitos a soprar vidro derretido, como bolas de sabão de vidro quente! 🫧"},
+  {id:"mobiliario", keys:["mobiliario","mobilia"],
+    a:"O núcleo de mobiliário reúne peças em madeiras nobres dos séc. XVI a XIX, refletindo o gosto doméstico português ao longo de quatro séculos.",
+    kid:"Há cadeiras, mesas e arcas de madeira muito antigas — algumas têm quase 500 anos! Imagina quantas famílias já as usaram. 🪑"},
+  {id:"historia", keys:["historia do museu","fundacao","1833","pedro iv","museu portuense"],
+    a:"O museu nasceu em 1833, criado por D. Pedro IV como Museu Portuense de Pinturas e Estampas — o primeiro museu público de arte em Portugal. Tornou-se Museu Nacional em 1932.",
+    kid:"Este museu é super antigo — nasceu em 1833! Foi o primeiro museu de arte aberto a todos em Portugal. 🏛️"},
+  {id:"palacio", keys:["palacio","carrancas"],
+    a:"Desde 1940 o museu ocupa o Palácio dos Carrancas, um palácio neoclássico do séc. XVIII, classificado monumento nacional, remodelado em 2001 pelo arquiteto Fernando Távora.",
+    kid:"O museu funciona dentro de um palácio antigo chamado Palácio dos Carrancas! Imagina viver numa casa tão grande e bonita. 🏰"},
+  {id:"horario", keys:["horario","aberto","fecha","hora"],
+    a:"O museu abre das 14h00 às 18h00 à terça-feira, e das 10h00 às 18h00 de quarta a domingo. Fecha à segunda-feira e em alguns feriados.",
+    kid:"O museu está aberto quase todos os dias! Só fecha à segunda-feira, para descansar. 😴"},
+  {id:"endereco", keys:["onde fica","endereco","localizacao","morada"],
+    a:"O museu fica na Rua de D. Manuel II, 44, no Porto, a poucos minutos a pé da Avenida da Boavista.",
+    kid:"O museu fica no Porto, numa rua chamada Rua de D. Manuel II. 🗺️"},
+  {id:"bilhete", keys:["bilhete","preco","entrada","custa","pagar"],
+    a:"Os preços e eventuais gratuidades podem variar — recomendo confirmar os valores atualizados no site oficial do museu antes da visita.",
+    kid:"Pergunta aos teus pais ou a um adulto — eles podem ver o preço do bilhete no site do museu! 🎫"},
+  {id:"greeting", keys:["ola","oi ","bom dia","boa tarde","boa noite"],
+    a:"Olá! Sou o assistente virtual do Museu Nacional Soares dos Reis. Pergunte-me sobre uma obra, um artista, informações práticas da visita — ou sobre a própria aplicação.",
+    kid:"Olá, explorador(a)! 👋 Sou o assistente do museu. Pergunta-me sobre qualquer estátua, quadro ou tesouro que vires — ou até sobre como usar esta app!"},
+
+  {id:"app_geral", keys:["esta app","esta aplicacao","como funciona a app","o que e esta app","o que e a app","para que serve esta app","ajuda"],
+    a:"Esta app tem quatro partes: 'Início', com a afluência das salas em tempo real e sugestões para visitar; 'Roteiros', que gera um percurso à medida do tempo que tem disponível; 'Tesouro', uma caça ao tesouro com pistas e medalhas; e eu, o 'Assistente', para responder a qualquer pergunta sobre as obras ou sobre a app. Sobre que parte quer saber mais?",
+    kid:"Esta app tem quatro cantinhos para explorar! O 'Início' mostra que salas estão mais vazias agora, os 'Roteiros' criam um passeio à tua medida, o 'Tesouro' é um jogo de pistas com medalhas, e eu sou o 'Assistente' — podes perguntar-me quase tudo! Qual destes queres conhecer melhor? 🧭"},
+
+  {id:"app_inicio", keys:["ecrã inicio","tela inicio","separador inicio","pagina inicial","afluencia","quantas pessoas","sala mais calma","notificacao"],
+    a:"O separador 'Início' mostra a afluência de cada sala do museu em tempo real (baixa, média ou alta), atualizada a cada poucos segundos. Também recebe avisos com a sala mais calma do momento ou eventos a começar em breve, e pode ganhar 15 pontos ao marcar que visitou a sala sugerida — ajuda a distribuir os visitantes pelo museu ao longo do dia.",
+    kid:"No 'Início' vês quantas pessoas há em cada sala agora — como um semáforo! Se uma sala estiver mais vazia, a app avisa-te e ainda podes ganhar 15 pontos por lá ires. 🚦"},
+
+  {id:"app_roteiros", keys:["separador roteiros","gerador de roteiros","como gerar roteiro","escolher tema","escolher duracao","30 min","60 min","90 min"],
+    a:"No separador 'Roteiros' escolhe quanto tempo tem (30, 60 ou 90 minutos) e um tema — 'Obras-primas da Escultura', 'Mistérios do Palácio', 'Tesouros do Oriente' ou 'Surpreenda-me'. A app monta então um percurso com o número certo de paragens para esse tempo, cada uma com a ficha da obra.",
+    kid:"Nos 'Roteiros' escolhes quanto tempo tens para a visita e um tema que gostes, e a app monta logo um passeio à tua medida, com as obras certinhas para veres! 🗺️"},
+
+  {id:"app_tesouro", keys:["separador tesouro","caca ao tesouro","como funciona o tesouro","pistas","medalha","medalhas","codigo qr","desconto","cupao"],
+    a:"O separador 'Tesouro' é a caça ao tesouro: há 4 pistas escondidas junto a obras do museu. Simula a leitura de um código QR em cada uma, responde ao enigma sobre a obra e ganha pontos — 25 se acertar, 5 por participar. Ao acumular respostas certas desbloqueia medalhas de Bronze, Prata e, com as 4 corretas, Ouro, que dá um código de desconto para a loja do museu.",
+    kid:"No 'Tesouro' há 4 pistas escondidas! Lês o código QR, respondes a uma pergunta sobre a obra, e ganhas pontos. Se acertares todas, ganhas a medalha de Ouro e até um desconto para a loja! 🏆🎁"},
+
+  {id:"app_assistente", keys:["separador assistente","modo crianca","modo adulto","perfil","como falas comigo","quem es tu","es um robot"],
+    a:"Eu sou o assistente virtual: pode escolher no topo do chat o modo 'Adulto' ou 'Criança', e eu adapto a linguagem das respostas a essa idade. Pergunte-me sobre qualquer obra do roteiro, sobre o museu, ou sobre como usar a app.",
+    kid:"Eu sou o teu assistente virtual! Podes mudar-me para o modo 'Criança' lá em cima, e eu passo a explicar tudo de forma mais simples e divertida. Pergunta-me o que quiseres! 🤖"},
+
+  {id:"app_pontos", keys:["pontos","pontuacao","quantos pontos tenho","para que servem os pontos"],
+    a:"Os pontos aparecem sempre visíveis no topo da app (o troféu 🏆) e somam-se ao responder às pistas do Tesouro e ao visitar salas com pouca gente sugeridas no Início. Servem para desbloquear as medalhas e, no caso da medalha de Ouro, um código de desconto na loja.",
+    kid:"Os pontos ficam ali em cima, junto ao troféu! Ganhas pontos ao responderes às pistas do Tesouro e ao visitares salas mais vazias — e podes trocá-los por medalhas! 🏆"}
+];
+const SUGGESTIONS = ["O que é «O Desterrado»?","Como funciona esta app?","Fala-me da cerâmica","Qual o horário?"];
+
+/* ================= STATE ================= */
+let history = [{screen:"inicio"}];
+let currentRoteiro = null;
+let currentObra = null;
+let selDuration = null;
+let selTema = null;
+let pontos = 0;
+let chatProfile = "adulto";
+let visitBonusClaimed = false;
+
+const ROOMS = [
+  {id:"escultura", nome:"Galeria da Escultura", piso:"Piso 1", pct:38},
+  {id:"pintura", nome:"Salas de Pintura", piso:"Piso 1", pct:66},
+  {id:"decorativas", nome:"Artes Decorativas", piso:"Piso 2", pct:22},
+  {id:"palacio", nome:"Salão Nobre", piso:"Piso 1", pct:50}
+];
+const EVENT_MSGS = [
+  "Visita orientada às Coleções de Cerâmica começa dentro de 15 min, no Piso 2.",
+  "Workshop em família na Sala de Pintura dentro de 20 min — lugares limitados."
+];
+
+const topTitle = document.getElementById('topTitle');
+const topSubtitle = document.getElementById('topSubtitle');
+const backBtn = document.getElementById('backBtn');
+const brandmark = document.getElementById('brandmark');
+const pointsVal = document.getElementById('pointsVal');
+
+function addPontos(n){
+  pontos += n;
+  pointsVal.textContent = pontos;
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+}
+
+function render(){
+  const top = history[history.length-1];
+  const rootTabs = ['inicio','roteiros','tesouro','assistente'];
+  backBtn.classList.toggle('hidden', history.length===1 && rootTabs.includes(top.screen));
+
+  if(top.screen==='inicio'){
+    showScreen('inicio'); topTitle.textContent='Início'; topSubtitle.textContent='Museu Nacional Soares dos Reis'; brandmark.style.display='flex';
+    setNavActive('inicio');
+  } else if(top.screen==='roteiros'){
+    showScreen('roteiros'); topTitle.textContent='Roteiros'; topSubtitle.textContent='Gerador inteligente'; brandmark.style.display='flex';
+    setNavActive('roteiros');
+  } else if(top.screen==='roteiro-detalhe'){
+    showScreen('roteiro-detalhe'); topTitle.textContent=currentRoteiro.titulo; topSubtitle.textContent=currentRoteiro.meta.join(' · '); brandmark.style.display='none';
+    setNavActive('roteiros');
+  } else if(top.screen==='obra'){
+    showScreen('obra'); topTitle.textContent=currentObra.title; topSubtitle.textContent=currentObra.sala; brandmark.style.display='none';
+    setNavActive('roteiros');
+  } else if(top.screen==='tesouro'){
+    showScreen('tesouro'); topTitle.textContent='Caça ao Tesouro'; topSubtitle.textContent='4 pistas escondidas'; brandmark.style.display='flex';
+    setNavActive('tesouro');
+  } else if(top.screen==='assistente'){
+    showScreen('assistente'); topTitle.textContent='Assistente Virtual'; topSubtitle.textContent='Pergunte sobre as coleções'; brandmark.style.display='none';
+    setNavActive('assistente');
+  }
+}
+function setNavActive(tab){
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+}
+function goTo(entry){ history.push(entry); render(); }
+function goBack(){ if(history.length>1){ history.pop(); render(); } }
+function resetTo(screen){ history = [{screen:screen}]; render(); }
+
+backBtn.addEventListener('click', goBack);
+document.querySelectorAll('.navbtn').forEach(btn=>{
+  btn.addEventListener('click', ()=> resetTo(btn.dataset.tab));
+});
+document.querySelectorAll('.quick-card').forEach(c=>{
+  c.addEventListener('click', ()=> resetTo(c.dataset.goto));
+});
+
+/* ================= INÍCIO: afluência em tempo real ================= */
+function levelColor(pct){
+  if(pct<40) return getComputedStyle(document.documentElement).getPropertyValue('--good');
+  if(pct<70) return getComputedStyle(document.documentElement).getPropertyValue('--warn');
+  return getComputedStyle(document.documentElement).getPropertyValue('--bad');
+}
+function levelLabel(pct){ return pct<40?"Baixa":pct<70?"Média":"Alta"; }
+
+function renderRooms(){
+  const wrap = document.getElementById('roomsList');
+  wrap.innerHTML = ROOMS.map(r=>`
+    <div class="room-row">
+      <div>
+        <div class="rname">${r.nome}</div>
+        <div class="rpiso">${r.piso} · afluência ${levelLabel(r.pct).toLowerCase()}</div>
+      </div>
+      <div class="room-bar"><i style="width:${r.pct}%;background:${levelColor(r.pct)}"></i></div>
+      <div class="room-pct">${r.pct}%</div>
+    </div>
+  `).join('');
+}
+
+let quietRoom = null;
+let notifIsEvent = false;
+function updateNotification(){
+  const notifTag = document.getElementById('notifTag');
+  const notifText = document.getElementById('notifText');
+  const visitBtn = document.getElementById('visitBonusBtn');
+  notifIsEvent = !notifIsEvent;
+  if(notifIsEvent){
+    notifTag.textContent = "Evento a começar";
+    notifText.textContent = EVENT_MSGS[Math.floor(Math.random()*EVENT_MSGS.length)];
+    visitBtn.style.display = 'none';
+  } else {
+    quietRoom = ROOMS.slice().sort((a,b)=>a.pct-b.pct)[0];
+    notifTag.textContent = "Sugestão em tempo real";
+    notifText.textContent = "A "+quietRoom.nome+" está com pouca gente agora ("+quietRoom.pct+"%) — ótima altura para visitar e ganhar pontos.";
+    visitBtn.style.display = visitBonusClaimed ? 'none' : 'inline-block';
+  }
+}
+document.getElementById('visitBonusBtn').addEventListener('click', function(){
+  if(visitBonusClaimed) return;
+  visitBonusClaimed = true;
+  addPontos(15);
+  this.textContent = "Visitado — +15 pts ✓";
+  this.disabled = true;
+});
+
+function jitterRooms(){
+  ROOMS.forEach(r=>{
+    let delta = Math.round((Math.random()-0.5)*16);
+    r.pct = Math.max(6, Math.min(94, r.pct+delta));
+  });
+  renderRooms();
+}
+setInterval(()=>{ jitterRooms(); }, 7000);
+setInterval(()=>{ updateNotification(); }, 9000);
+
+/* ================= ROTEIROS: gerador ================= */
+document.querySelectorAll('#durationChips .selchip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    document.querySelectorAll('#durationChips .selchip').forEach(c=>c.classList.remove('picked'));
+    chip.classList.add('picked');
+    selDuration = parseInt(chip.dataset.dur,10);
+  });
+});
+document.querySelectorAll('#themeChips .selchip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    document.querySelectorAll('#themeChips .selchip').forEach(c=>c.classList.remove('picked'));
+    chip.classList.add('picked');
+    selTema = chip.dataset.tema;
+  });
+});
+
+const THEME_POOLS = {
+  escultura: ["desterrado","conde","musica"],
+  palacio: ["desterrado","vieira","ourivesaria","mobiliario"],
+  oriente: ["porcelana","faianca","vidros","ourivesaria","mobiliario"],
+};
+const THEME_TITLES = {
+  escultura:"Obras-primas da Escultura",
+  palacio:"Mistérios do Palácio",
+  oriente:"Tesouros do Oriente",
+  surpresa:"Roteiro Surpresa"
+};
+function shuffledKeys(){
+  const arr = ALL_KEYS.slice();
+  for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  return arr;
+}
+function generateRoteiro(tema, duracao){
+  const needed = duracao===30?2:(duracao===60?4:6);
+  let pool = tema==='surpresa' ? shuffledKeys() : THEME_POOLS[tema].slice();
+  let result = pool.slice(0, needed);
+  if(result.length < needed){
+    const rest = ALL_KEYS.filter(k=>!result.includes(k));
+    for(const k of rest){ if(result.length>=needed) break; result.push(k); }
+  }
+  return {
+    titulo: THEME_TITLES[tema],
+    meta:[duracao+" min", result.length+" paragens"],
+    desc: "Roteiro gerado à medida do tempo que tem disponível hoje.",
+    paragens: result
+  };
+}
+document.getElementById('generateBtn').addEventListener('click', ()=>{
+  if(!selDuration || !selTema){
+    alert("Escolha a duração e o tema para gerar o seu roteiro.");
+    return;
+  }
+  currentRoteiro = generateRoteiro(selTema, selDuration);
+  buildRoteiroDetalhe();
+  goTo({screen:'roteiro-detalhe'});
+});
+
+function buildRoteiroDetalhe(){
+  document.getElementById('rdEyebrow').textContent = currentRoteiro.meta.join(' · ');
+  document.getElementById('rdTitle').textContent = currentRoteiro.titulo;
+  document.getElementById('rdSub').textContent = currentRoteiro.desc;
+  const tl = document.getElementById('rdTimeline');
+  tl.innerHTML = currentRoteiro.paragens.map((key,i)=>{
+    const o = OBRAS[key];
+    return `
+      <div class="stop" data-key="${key}">
+        <div class="stop-num">${i+1}</div>
+        <div class="stop-card">
+          <div class="stop-thumb">${svg(o.icon,20)}</div>
+          <div class="stop-text"><h4>${o.title}</h4><p>${o.sala}</p></div>
+          <div class="stop-chevron">${chevron()}</div>
+        </div>
+      </div>`;
+  }).join('');
+  tl.querySelectorAll('.stop').forEach(stop=>{
+    stop.addEventListener('click', ()=> openObra(stop.dataset.key));
+  });
+}
+
+/* ================= OBRA detail ================= */
+function openObra(key){
+  currentObra = Object.assign({}, OBRAS[key]);
+  document.getElementById('obraHero').innerHTML = svg(currentObra.icon, 80);
+  document.getElementById('obraRoomText').textContent = currentObra.sala;
+  document.getElementById('obraTitle').textContent = currentObra.title;
+  document.getElementById('obraAutor').textContent = currentObra.autor;
+  document.getElementById('obraAno').textContent = currentObra.ano;
+  document.getElementById('obraTecnica').textContent = currentObra.tecnica;
+  document.getElementById('obraDesc').textContent = currentObra.desc;
+  goTo({screen:'obra'});
+}
+document.getElementById('askAboutBtn').addEventListener('click', ()=>{
+  const kbEntry = KB.find(k=>k.id===currentObra.kb);
+  resetTo('assistente');
+  addUserMessage('Fala-me sobre «'+currentObra.title+'»');
+  respondWithDelay(kbEntry ? (chatProfile==='crianca'?kbEntry.kid:kbEntry.a) : fallbackAnswer());
+});
+
+/* ================= CAÇA AO TESOURO ================= */
+const PISTAS = [
+  {key:"desterrado", sala:"Galeria da Escultura", clue:"«Fui talhado em pedra branca das montanhas de Itália e guardo a tristeza de quem ficou longe de casa.»",
+    q:"Em que material foi esculpido «O Desterrado»?", opts:["Bronze","Mármore","Madeira","Terracota"], correct:1,
+    exp:"Foi esculpido em mármore de Carrara, em 1872."},
+  {key:"faianca", sala:"Artes Decorativas", clue:"«Sou feita de barro, cozida e pintada — venho de terras a norte, onde há séculos moldam louça.»",
+    q:"A faiança exposta no museu é sobretudo de que região?", opts:["Sul de Portugal","Açores","Norte de Portugal","Brasil"], correct:2,
+    exp:"É sobretudo faiança do Norte de Portugal, dos séc. XVIII e XIX."},
+  {key:"ourivesaria", sala:"Artes Decorativas", clue:"«Brilho e requinte — fui trabalhada por mãos de ourives no século XVIII.»",
+    q:"As peças de ourivesaria do séc. XVIII são feitas principalmente de quê?", opts:["Ferro","Vidro","Bronze","Prata"], correct:3,
+    exp:"São peças em prata e prata dourada, feitas por ourives portugueses."},
+  {key:"escolaporto", sala:"Salas de Pintura", clue:"«Pintámos paisagens tão reais que pareciam janelas — juntos formámos uma escola sem paredes.»",
+    q:"Como se chama o grupo de pintores naturalistas do museu, com Silva Porto e Pousão?", opts:["Escola de Lisboa","Círculo de Coimbra","Escola do Porto","Grupo do Minho"], correct:2,
+    exp:"É a chamada Escola do Porto, com Silva Porto, Marques de Oliveira, Artur Loureiro e Henrique Pousão."}
+];
+let pistaState = PISTAS.map(()=>({status:"locked", correct:null}));
+
+function renderMedals(){
+  const correctCount = pistaState.filter(p=>p.correct===true).length;
+  const medals = [
+    {min:1, label:"Bronze"},
+    {min:3, label:"Prata"},
+    {min:4, label:"Ouro"}
+  ];
+  const row = document.getElementById('medalsRow');
+  row.innerHTML = medals.map(m=>`
+    <div class="medal-badge ${correctCount>=m.min?'unlocked':''}">
+      ${svg('medal',22)}
+      <span>${m.label}</span>
+    </div>`).join('');
+}
+
+function renderProgress(){
+  const done = pistaState.filter(p=>p.status==='done').length;
+  document.getElementById('progressFill').style.width = (done/PISTAS.length*100)+'%';
+  document.getElementById('progressText').textContent = done+"/"+PISTAS.length+" pistas";
+  renderMedals();
+  renderReward();
+}
+
+function renderReward(){
+  const correctCount = pistaState.filter(p=>p.correct===true).length;
+  const area = document.getElementById('rewardArea');
+  if(correctCount>=4){
+    area.innerHTML = `
+      <div class="reward-card">
+        ${svg('gift',26)}
+        <h4>Medalha de Ouro conquistada!</h4>
+        <p>Mostre este código na loja do museu e receba um desconto especial.</p>
+        <div class="reward-code">MNSR-OURO10</div>
+      </div>`;
+  } else {
+    area.innerHTML = "";
+  }
+}
+
+function renderPistas(){
+  const wrap = document.getElementById('pistasList');
+  wrap.innerHTML = PISTAS.map((p,i)=>{
+    const st = pistaState[i];
+    let inner = "";
+    if(st.status==='locked'){
+      inner = `<button class="scan-btn" data-i="${i}" data-action="scan">${svg('qrcode',15)} Simular leitura do código QR</button>`;
+    } else if(st.status==='scanning'){
+      inner = `<button class="scan-btn scanning">${svg('qrcode',15)} A ler código…</button>`;
+    } else if(st.status==='quiz'){
+      inner = `<div class="quiz-q">${p.q}</div>` +
+        p.opts.map((op,oi)=>`<button class="quiz-opt" data-i="${i}" data-oi="${oi}" data-action="answer">${op}</button>`).join('');
+    } else if(st.status==='done'){
+      inner = `<div class="quiz-q">${p.q}</div>` +
+        p.opts.map((op,oi)=>{
+          let cls='quiz-opt';
+          if(oi===p.correct) cls+=' correct';
+          else if(oi===st.chosen) cls+=' wrong';
+          return `<button class="${cls}" disabled>${op}</button>`;
+        }).join('') +
+        `<div class="quiz-fb">${p.exp}</div>` +
+        `<div class="done-tag" style="margin-top:8px;">${svg('check',14)} ${st.correct? 'Resposta certa · +25 pts':'Resolvido · +5 pts'}</div>`;
+    }
+    return `
+      <div class="pista-card ${st.status==='done'?'done':''}">
+        <div class="pista-head">
+          <div class="pista-icon">${svg(OBRAS[p.key].icon, 19)}</div>
+          <div><h4>Pista ${i+1} · ${p.sala}</h4><p>Junto a "${OBRAS[p.key].title}"</p></div>
+        </div>
+        ${st.status==='locked' ? `<div class="pista-clue">${p.clue}</div>` : ''}
+        ${inner}
+      </div>`;
+  }).join('');
+
+  wrap.querySelectorAll('[data-action="scan"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const i = parseInt(btn.dataset.i,10);
+      pistaState[i].status = 'scanning';
+      renderPistas();
+      setTimeout(()=>{
+        pistaState[i].status = 'quiz';
+        renderPistas();
+      }, 900);
+    });
+  });
+  wrap.querySelectorAll('[data-action="answer"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const i = parseInt(btn.dataset.i,10);
+      const oi = parseInt(btn.dataset.oi,10);
+      const isCorrect = oi === PISTAS[i].correct;
+      pistaState[i].status = 'done';
+      pistaState[i].correct = isCorrect;
+      pistaState[i].chosen = oi;
+      addPontos(isCorrect?25:5);
+      renderPistas();
+      renderProgress();
+    });
+  });
+}
+
+/* ================= ASSISTENTE ================= */
+const chatScroll = document.getElementById('chatScroll');
+const chatChips = document.getElementById('chatChips');
+const chatInput = document.getElementById('chatInput');
+const chatSend = document.getElementById('chatSend');
+let chatStarted = false;
+
+function normalize(s){ return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
+function addBubble(text, who){
+  const div = document.createElement('div');
+  div.className = 'bubble ' + who;
+  div.textContent = text;
+  chatScroll.appendChild(div);
+  chatScroll.scrollTop = chatScroll.scrollHeight;
+}
+function addUserMessage(text){ addBubble(text, 'user'); }
+function showTyping(){
+  const div = document.createElement('div');
+  div.className = 'typing'; div.id = 'typingIndicator';
+  div.innerHTML = '<span></span><span></span><span></span>';
+  chatScroll.appendChild(div);
+  chatScroll.scrollTop = chatScroll.scrollHeight;
+}
+function hideTyping(){ const t = document.getElementById('typingIndicator'); if(t) t.remove(); }
+function respondWithDelay(answer){
+  showTyping();
+  setTimeout(()=>{
+    hideTyping();
+    addBubble(answer, 'bot');
+    renderChips(SUGGESTIONS);
+  }, 620 + Math.random()*400);
+}
+function fallbackAnswer(){
+  return chatProfile==='crianca'
+    ? "Hmm, essa eu ainda não sei responder! Pergunta-me sobre «O Desterrado», a cerâmica, ou até sobre como usar esta app. 🙂"
+    : "Ainda não tenho uma resposta específica para isso. Pode perguntar-me sobre obras como «O Desterrado», a cerâmica, a porcelana oriental, informações práticas da visita, ou sobre como usar a app (roteiros, tesouro, afluência, pontos).";
+}
+function answerFor(text){
+  const n = normalize(text);
+  const hit = KB.find(k => k.keys.some(kw => n.includes(kw)));
+  if(!hit) return fallbackAnswer();
+  return chatProfile==='crianca' ? hit.kid : hit.a;
+}
+function renderChips(list){
+  chatChips.innerHTML = list.map(s=>`<button class="chip">${s}</button>`).join('');
+  chatChips.querySelectorAll('.chip').forEach(chip=>{
+    chip.addEventListener('click', ()=> sendMessage(chip.textContent));
+  });
+}
+function sendMessage(text){
+  text = text.trim(); if(!text) return;
+  addUserMessage(text);
+  chatInput.value='';
+  respondWithDelay(answerFor(text));
+}
+function initChat(){
+  if(chatStarted) return;
+  chatStarted = true;
+  addBubble("Olá! Sou o assistente virtual do museu. Pergunte-me sobre uma obra, um artista, ou informações práticas da visita.", 'bot');
+  renderChips(SUGGESTIONS);
+}
+chatSend.addEventListener('click', ()=> sendMessage(chatInput.value));
+chatInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') sendMessage(chatInput.value); });
+
+const profAdulto = document.getElementById('profAdulto');
+const profCrianca = document.getElementById('profCrianca');
+function setProfile(p){
+  chatProfile = p;
+  profAdulto.classList.toggle('active', p==='adulto');
+  profCrianca.classList.toggle('active', p==='crianca');
+  const div = document.createElement('div');
+  div.className = 'bubble system';
+  div.textContent = p==='crianca' ? "Modo Criança ativado 🎈" : "Modo Adulto ativado";
+  chatScroll.appendChild(div);
+  chatScroll.scrollTop = chatScroll.scrollHeight;
+}
+profAdulto.addEventListener('click', ()=> setProfile('adulto'));
+profCrianca.addEventListener('click', ()=> setProfile('crianca'));
+
+/* ================= INIT ================= */
+renderRooms();
+updateNotification();
+renderPistas();
+renderProgress();
+initChat();
+render();
+
+})();
+</script>
+</body>
+</html>
